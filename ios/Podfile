@@ -12,6 +12,7 @@ target 'ReactNativeRealmdb' do
     :hermes_enabled => false
   )
 
+
   target 'ReactNativeRealmdbTests' do
     inherit! :complete
     # Pods for testing
