@@ -8,6 +8,7 @@
 
 import React from 'react';
 import {
+  FlatList,
   StatusBar,
   StyleSheet,
   Text,
@@ -19,6 +20,7 @@ import {
 import LinearGradient from 'react-native-linear-gradient';
 import {getStatusBarHeight} from 'react-native-status-bar-height';
 import Icon from 'react-native-vector-icons/MaterialIcons';
+import Repository from './components/Repository';
 
 const App: React.FC = () => {
   const isDarkMode = useColorScheme() === 'dark';
@@ -41,6 +43,24 @@ const App: React.FC = () => {
           <Icon name="add" size={22} color="#FFF" />
         </TouchableOpacity>
       </View>
+      <FlatList
+        style={styles.list}
+        contentContainerStyle={{paddingHorizontal: 20}}
+        keyboardShouldPersistTaps="handled"
+        showsVerticalScrollIndicator={false}
+        data={[
+          {
+            id: 1,
+            name: 'Lorem Ipsum',
+            description:
+              'Est non sint reprehenderit dolor voluptate non occaecat in est quis. ',
+            stars: 1213,
+            forks: 131,
+          },
+        ]}
+        keyExtractor={item => String(item.id)}
+        renderItem={({item}) => <Repository data={item} />}
+      />
     </LinearGradient>
   );
 };
@@ -78,6 +98,9 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     borderRadius: 4,
     paddingHorizontal: 10,
+  },
+  list: {
+    marginTop: 20,
   },
 });
 
