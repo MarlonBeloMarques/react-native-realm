@@ -6,9 +6,10 @@
  * @flow strict-local
  */
 
-import React from 'react';
+import React, {useEffect, useMemo, useState} from 'react';
 import {
   FlatList,
+  Keyboard,
   StatusBar,
   StyleSheet,
   Text,
@@ -21,9 +22,99 @@ import LinearGradient from 'react-native-linear-gradient';
 import {getStatusBarHeight} from 'react-native-status-bar-height';
 import Icon from 'react-native-vector-icons/MaterialIcons';
 import Repository from './components/Repository';
+import api from './services/api';
+import getRealm from './services/realm';
+
+interface Response {
+  id: Number;
+  name: String;
+  full_name: String;
+  description: String;
+  stargazers_count: Number;
+  forks_count: Number;
+}
 
 const App: React.FC = () => {
   const isDarkMode = useColorScheme() === 'dark';
+  const [input, setInput] = useState('');
+  const [error, setError] = useState(false);
+  const [repositories, setRepositories] =
+    useState<Realm.Results<Realm.Object>>();
+
+  useEffect(() => {
+    const loadRepositories = async () => {
+      const realm = await getRealm();
+
+      const data = realm.objects('Repository').sorted('stars', true);
+
+      setRepositories(data);
+    };
+
+    loadRepositories();
+  }, []);
+
+  const saveRepository = async (repository: Response) => {
+    const data = {
+      id: repository.id,
+      name: repository.name,
+      fullName: repository.full_name,
+      description: repository.description,
+      stars: repository.stargazers_count,
+      forks: repository.forks_count,
+    };
+
+    const realm = await getRealm();
+
+    realm.write(() => {
+      realm.create('Repository', data, 'modified');
+    });
+
+    return data;
+  };
+
+  const handleAddRepository = async () => {
+    try {
+      const {data} = await api.get(`/repos/${input}`);
+
+      await saveRepository(data);
+
+      setInput('');
+      setError(false);
+      Keyboard.dismiss();
+    } catch (err) {
+      console.warn('Erro');
+      setError(true);
+    }
+  };
+
+  const handleRefreshRepository = async (repository: any) => {
+    const {data} = await api.get(`/repos/${repository.fullName}`);
+
+    const dataSave = await saveRepository(data);
+
+    setRepositories(
+      repositories?.map(repo => (repo.id === dataSave.id ? dataSave : repo)),
+    );
+  };
+
+  const renderRepositories = useMemo(() => {
+    return (
+      <FlatList
+        style={styles.list}
+        contentContainerStyle={{paddingHorizontal: 20}}
+        keyboardShouldPersistTaps="handled"
+        showsVerticalScrollIndicator={false}
+        data={repositories}
+        keyExtractor={item => String(item.id)}
+        renderItem={({item}) => (
+          <Repository
+            data={item}
+            onRefresh={() => handleRefreshRepository(item)}
+          />
+        )}
+      />
+    );
+  }, [repositories]);
 
   return (
     <LinearGradient
@@ -35,32 +126,25 @@ const App: React.FC = () => {
       <Text style={styles.title}>Repositórios</Text>
       <View style={styles.view}>
         <TextInput
+          value={input}
+          onChangeText={setInput}
           placeholder="Procurar repositório..."
-          style={styles.input}
+          style={[
+            styles.input,
+            {
+              borderColor: error ? '#FF7272' : '#FFF',
+            },
+          ]}
           placeholderTextColor={'#999'}
         />
-        <TouchableOpacity style={styles.add} activeOpacity={0.8}>
+        <TouchableOpacity
+          onPress={handleAddRepository}
+          style={styles.add}
+          activeOpacity={0.8}>
           <Icon name="add" size={22} color="#FFF" />
         </TouchableOpacity>
       </View>
-      <FlatList
-        style={styles.list}
-        contentContainerStyle={{paddingHorizontal: 20}}
-        keyboardShouldPersistTaps="handled"
-        showsVerticalScrollIndicator={false}
-        data={[
-          {
-            id: 1,
-            name: 'Lorem Ipsum',
-            description:
-              'Est non sint reprehenderit dolor voluptate non occaecat in est quis. ',
-            stars: 1213,
-            forks: 131,
-          },
-        ]}
-        keyExtractor={item => String(item.id)}
-        renderItem={({item}) => <Repository data={item} />}
-      />
+      {renderRepositories}
     </LinearGradient>
   );
 };
@@ -91,6 +175,7 @@ const styles = StyleSheet.create({
     fontSize: 16,
     color: '#333',
     backgroundColor: '#FFF',
+    borderWidth: 2,
   },
   add: {
     backgroundColor: '#6BD4C1',

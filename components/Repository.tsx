@@ -1,5 +1,5 @@
 import React from 'react';
-import {StyleSheet, Text, View} from 'react-native';
+import {StyleSheet, Text, TouchableOpacity, View} from 'react-native';
 import Icon from 'react-native-vector-icons/FontAwesome';
 
 interface Data {
@@ -12,9 +12,10 @@ interface Data {
 
 interface Props {
   data: Data;
+  onRefresh: () => {};
 }
 
-const Repository: React.FC<Props> = ({data}) => {
+const Repository: React.FC<Props> = ({data, onRefresh}) => {
   return (
     <View style={styles.container}>
       <Text style={styles.name}>{data.name}</Text>
@@ -31,6 +32,10 @@ const Repository: React.FC<Props> = ({data}) => {
           <Text style={styles.statCount}>{data.forks}</Text>
         </View>
       </View>
+      <TouchableOpacity style={styles.refresh} onPress={onRefresh}>
+        <Icon name="refresh" size={16} color="#7159c1" />
+        <Text style={styles.refreshText}>ATUALIZAR</Text>
+      </TouchableOpacity>
     </View>
   );
 };
@@ -63,6 +68,16 @@ const styles = StyleSheet.create({
   },
   statCount: {
     marginLeft: 6,
+  },
+  refresh: {
+    marginTop: 20,
+    flexDirection: 'row',
+  },
+  refreshText: {
+    fontSize: 14,
+    fontWeight: 'bold',
+    color: '#7159c1',
+    marginLeft: 5,
   },
 });
 
